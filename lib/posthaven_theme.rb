@@ -1,5 +1,5 @@
 require 'httparty'
-module ShopifyTheme
+module PosthavenTheme
   include HTTParty
   @@current_api_call_count = 0
   @@total_api_calls = 40
@@ -7,7 +7,6 @@ module ShopifyTheme
   NOOPParser = Proc.new {|data, format| {} }
   TIMER_RESET = 10
   PERMIT_LOWER_LIMIT = 3
-  TIMBER_ZIP = "https://github.com/Shopify/Timber/archive/%s.zip"
   LAST_KNOWN_STABLE = "v1.1.0"
 
   def self.test?
@@ -15,8 +14,8 @@ module ShopifyTheme
   end
 
   def self.manage_timer(response)
-    return unless response.headers['x-shopify-shop-api-call-limit']
-    @@current_api_call_count, @@total_api_calls = response.headers['x-shopify-shop-api-call-limit'].split('/')
+    return unless response.headers['x-posthaven-api-call-limit']
+    @@current_api_call_count, @@total_api_calls = response.headers['x-posthaven-api-call-limit'].split('/')
     @@current_timer = Time.now if @current_timer.nil?
   end
 
@@ -51,7 +50,7 @@ module ShopifyTheme
   def self.asset_list
     # HTTParty parser chokes on assest listing, have it noop
     # and then use a rel JSON parser.
-    response = shopify.get(path, :parser => NOOPParser)
+    response = backend.get(path, :parser => NOOPParser)
     manage_timer(response)
 
     assets = JSON.parse(response.body)["assets"].collect {|a| a['key'] }
@@ -60,7 +59,7 @@ module ShopifyTheme
   end
 
   def self.get_asset(asset)
-    response = shopify.get(path, :query =>{:asset => {:key => asset}}, :parser => NOOPParser)
+    response = backend.get(path, :query =>{:asset => {:key => asset}}, :parser => NOOPParser)
     manage_timer(response)
 
     # HTTParty json parsing is broken?
@@ -70,30 +69,15 @@ module ShopifyTheme
   end
 
   def self.send_asset(data)
-    response = shopify.put(path, :body =>{:asset => data})
+    response = backend.put(path, :body =>{:asset => data})
     manage_timer(response)
     response
   end
 
   def self.delete_asset(asset)
-    response = shopify.delete(path, :body =>{:asset => {:key => asset}})
+    response = backend.delete(path, :body =>{:asset => {:key => asset}})
     manage_timer(response)
     response
-  end
-
-  def self.upload_timber(name, master)
-    source = TIMBER_ZIP % (master ? 'master' : LAST_KNOWN_STABLE)
-    puts master ? "Using latest build from shopify" : "Using last known stable build -- #{LAST_KNOWN_STABLE}"
-    response = shopify.post("/admin/themes.json", :body => {:theme => {:name => name, :src => source, :role => 'unpublished'}})
-    manage_timer(response)
-    body = JSON.parse(response.body)
-    if theme = body['theme']
-      watch_until_processing_complete(theme)
-    else
-      puts "Could not download theme!"
-      puts body
-      exit 1
-    end
   end
 
   def self.config
@@ -131,21 +115,22 @@ module ShopifyTheme
   end
 
   def self.check_config
-    shopify.get(path).code == 200
+    backend.get(path).code == 200
   end
 
   private
-  def self.shopify
+
+  def self.backend
     basic_auth config[:api_key], config[:password]
-    base_uri "https://#{config[:store]}"
-    ShopifyTheme
+    base_uri "#{config[:protocol] || 'http'}://#{config[:store]}"
+    PosthavenTheme
   end
 
   def self.watch_until_processing_complete(theme)
     count = 0
     while true do
       Kernel.sleep(count)
-      response = shopify.get("/admin/themes/#{theme['id']}.json")
+      response = backend.get("/admin/themes/#{theme['id']}.json")
       theme = JSON.parse(response.body)['theme']
       return theme if theme['previewable']
       count += 5

@@ -9,7 +9,7 @@ require 'filewatcher'
 require 'launchy'
 require 'mimemagic'
 
-module ShopifyTheme
+module PosthavenTheme
   EXTENSIONS = [
     {mimetype: 'application/x-liquid', extensions: %w(liquid), parents: 'text/plain'},
     {mimetype: 'application/json', extensions: %w(json), parents: 'text/plain'},
@@ -19,7 +19,7 @@ module ShopifyTheme
   ]
 
   def self.configureMimeMagic
-    ShopifyTheme::EXTENSIONS.each do |extension|
+    PosthavenTheme::EXTENSIONS.each do |extension|
       MimeMagic.add(extension.delete(:mimetype), extension)
     end
   end
@@ -37,7 +37,7 @@ module ShopifyTheme
 
     desc "check", "check configuration"
     def check
-      if ShopifyTheme.check_config
+      if PosthavenTheme.check_config
         say("Configuration [OK]", :green)
       else
         say("Configuration [FAIL]", :red)
@@ -48,44 +48,6 @@ module ShopifyTheme
     def configure(api_key=nil, password=nil, store=nil, theme_id=nil)
       config = {:api_key => api_key, :password => password, :store => store, :theme_id => theme_id}
       create_file('config.yml', config.to_yaml)
-    end
-
-    desc "bootstrap API_KEY PASSWORD STORE THEME_NAME", "bootstrap with Timber to shop and configure local directory. Include master if you'd like to use the latest build for the theme"
-    method_option :master, :type => :boolean, :default => false
-    def bootstrap(api_key=nil, password=nil, store=nil, theme_name=nil, master=nil)
-      ShopifyTheme.config = {:api_key => api_key, :password => password, :store => store}
-
-      theme_name ||= 'Timber'
-      say("Registering #{theme_name} theme on #{store}", :green)
-      theme = ShopifyTheme.upload_timber(theme_name, master || false)
-
-      say("Creating directory named #{theme_name}", :green)
-      empty_directory(theme_name)
-
-      say("Saving configuration to #{theme_name}", :green)
-      ShopifyTheme.config.merge!(theme_id: theme['id'])
-      create_file("#{theme_name}/config.yml", ShopifyTheme.config.to_yaml)
-
-      say("Downloading #{theme_name} assets from Shopify")
-      Dir.chdir(theme_name)
-      download()
-    end
-
-    desc "download FILE", "download the shops current theme assets"
-    method_option :quiet, :type => :boolean, :default => false
-    method_option :exclude
-    def download(*keys)
-      assets = keys.empty? ? ShopifyTheme.asset_list : keys
-
-      if options['exclude']
-        assets = assets.delete_if { |asset| asset =~ Regexp.new(options['exclude']) }
-      end
-
-      assets.each do |asset|
-        download_asset(asset)
-        say("#{ShopifyTheme.api_usage} Downloaded: #{asset}", :green) unless options['quiet']
-      end
-      say("Done.", :green) unless options['quiet']
     end
 
     desc "open", "open the store in your browser"
@@ -112,9 +74,9 @@ module ShopifyTheme
       if ask("Continue? (Y/N): ") == "Y"
         # only delete files on remote that are not present locally
         # files present on remote and present locally get overridden anyway
-        remote_assets = keys.empty? ? (ShopifyTheme.asset_list - local_assets_list) : keys
+        remote_assets = keys.empty? ? (PosthavenTheme.asset_list - local_assets_list) : keys
         remote_assets.each do |asset|
-          delete_asset(asset, options['quiet']) unless ShopifyTheme.ignore_files.any? { |regex| regex =~ asset }
+          delete_asset(asset, options['quiet']) unless PosthavenTheme.ignore_files.any? { |regex| regex =~ asset }
         end
         local_assets = keys.empty? ? local_assets_list : keys
         local_assets.each do |asset|
@@ -188,8 +150,8 @@ module ShopifyTheme
 
     def local_assets_list
       local_files.reject do |p|
-        @permitted_files ||= (DEFAULT_WHITELIST | ShopifyTheme.whitelist_files).map{|pattern| Regexp.new(pattern)}
-        @permitted_files.none? { |regex| regex =~ p } || ShopifyTheme.ignore_files.any? { |regex| regex =~ p }
+        @permitted_files ||= (DEFAULT_WHITELIST | PosthavenTheme.whitelist_files).map{|pattern| Regexp.new(pattern)}
+        @permitted_files.none? { |regex| regex =~ p } || PosthavenTheme.ignore_files.any? { |regex| regex =~ p }
       end
     end
 
@@ -201,8 +163,8 @@ module ShopifyTheme
 
     def download_asset(key)
       return unless valid?(key)
-      notify_and_sleep("Approaching limit of API permits. Naptime until more permits become available!") if ShopifyTheme.needs_sleep?
-      asset = ShopifyTheme.get_asset(key)
+      notify_and_sleep("Approaching limit of API permits. Naptime until more permits become available!") if PosthavenTheme.needs_sleep?
+      asset = PosthavenTheme.get_asset(key)
       if asset['value']
         # For CRLF line endings
         content = asset['value'].gsub("\r", "")
@@ -220,7 +182,7 @@ module ShopifyTheme
       return unless valid?(asset)
       data = {:key => asset}
       content = File.read(asset)
-      if binary_file?(asset) || ShopifyTheme.is_binary_data?(content)
+      if binary_file?(asset) || PosthavenTheme.is_binary_data?(content)
         content = File.open(asset, "rb") { |io| io.read }
         data.merge!(:attachment => Base64.encode64(content))
       else
@@ -228,7 +190,7 @@ module ShopifyTheme
       end
 
       response = show_during("[#{timestamp}] Uploading: #{asset}", quiet) do
-        ShopifyTheme.send_asset(data)
+        PosthavenTheme.send_asset(data)
       end
       if response.success?
         say("[#{timestamp}] Uploaded: #{asset}", :green) unless quiet
@@ -240,7 +202,7 @@ module ShopifyTheme
     def delete_asset(key, quiet=false)
       return unless valid?(key)
       response = show_during("[#{timestamp}] Removing: #{key}", quiet) do
-        ShopifyTheme.delete_asset(key)
+        PosthavenTheme.delete_asset(key)
       end
       if response.success?
         say("[#{timestamp}] Removed: #{key}", :green) unless quiet
@@ -251,7 +213,7 @@ module ShopifyTheme
 
     def notify_and_sleep(message)
       say(message, :red)
-      ShopifyTheme.sleep
+      PosthavenTheme.sleep
     end
 
     def valid?(key)
@@ -301,4 +263,4 @@ module ShopifyTheme
     end
   end
 end
-ShopifyTheme.configureMimeMagic
+PosthavenTheme.configureMimeMagic

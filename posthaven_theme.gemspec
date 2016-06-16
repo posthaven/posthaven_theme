@@ -1,19 +1,19 @@
 # -*- encoding: utf-8 -*-
 $:.push File.expand_path("../lib", __FILE__)
-require "shopify_theme/version"
+require "posthaven_theme/version"
 
 Gem::Specification.new do |s|
-  s.name        = "shopify_theme"
-  s.version     = ShopifyTheme::VERSION
+  s.name        = "posthaven_theme"
+  s.version     = PosthavenTheme::VERSION
   s.platform    = Gem::Platform::RUBY
-  s.authors     = ["John Duff"]
-  s.email       = ["john.duff@shopify.com"]
-  s.homepage    = "https://github.com/Shopify/shopify_theme"
+  s.authors     = ["Brett Gibson"]
+  s.email       = ["help@posthaven.com"]
+  s.homepage    = "https://github.com/posthaven/posthaven_theme"
   s.summary     = %q{Command line tool for developing themes}
-  s.description = %q{Command line tool to help with developing Shopify themes. Provides simple commands to download, upload and delete files from a theme. Also includes the watch command to watch a directory and upload files as they change.}
+  s.description = %q{Command line tool to help with developing Posthaven themes. Provides simple commands to download, upload and delete files from a theme. Also includes the watch command to watch a directory and upload files as they change.}
   s.license     = 'MIT'
 
-  s.rubyforge_project = "shopify_theme"
+  s.rubyforge_project = "posthaven_theme"
   s.add_dependency('thor', '>= 0.14.4')
   s.add_dependency('httparty', '~> 0.13.0')
   s.add_dependency('json', '~> 1.8.0')
