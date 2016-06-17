@@ -44,13 +44,13 @@ module PosthavenTheme
       end
     end
 
-    desc "configure API_KEY PASSWORD STORE THEME_ID", "generate a config file for the store to connect to"
-    def configure(api_key=nil, password=nil, store=nil, theme_id=nil)
-      config = {:api_key => api_key, :password => password, :store => store, :theme_id => theme_id}
+    desc "configure API_KEY PASSWORD SITE THEME_ID", "generate a config file for the site to connect to"
+    def configure(api_key=nil, password=nil, site=nil, theme_id=nil)
+      config = {api_key: api_key, password: password, site: site, theme_id: theme_id}
       create_file('config.yml', config.to_yaml)
     end
 
-    desc "open", "open the store in your browser"
+    desc "open", "open the site in your browser"
     def open(*keys)
       if Launchy.open shop_theme_url
         say("Done.", :green)
@@ -58,7 +58,7 @@ module PosthavenTheme
     end
 
     desc "upload FILE", "upload all theme assets to shop"
-    method_option :quiet, :type => :boolean, :default => false
+    method_option :quiet, type: :boolean, default: false
     def upload(*keys)
       assets = keys.empty? ? local_assets_list : keys
       assets.each do |asset|
@@ -68,7 +68,7 @@ module PosthavenTheme
     end
 
     desc "replace FILE", "completely replace shop theme assets with local theme assets"
-    method_option :quiet, :type => :boolean, :default => false
+    method_option :quiet, type: :boolean, default: false
     def replace(*keys)
       say("Are you sure you want to completely replace your shop theme assets? This is not undoable.", :yellow)
       if ask("Continue? (Y/N): ") == "Y"
@@ -87,7 +87,7 @@ module PosthavenTheme
     end
 
     desc "remove FILE", "remove theme asset"
-    method_option :quiet, :type => :boolean, :default => false
+    method_option :quiet, type: :boolean, default: false
     def remove(*keys)
       keys.each do |key|
         delete_asset(key, options['quiet'])
@@ -96,8 +96,8 @@ module PosthavenTheme
     end
 
     desc "watch", "upload and delete individual theme assets as they change, use the --keep_files flag to disable remote file deletion"
-    method_option :quiet, :type => :boolean, :default => false
-    method_option :keep_files, :type => :boolean, :default => false
+    method_option :quiet, type: :boolean, default: false
+    method_option :keep_files, type: :boolean, default: false
     def watch
       puts "Watching current folder: #{Dir.pwd}"
       watcher do |filename, event|
@@ -135,7 +135,7 @@ module PosthavenTheme
     end
 
     def shop_theme_url
-      url = config[:store]
+      url = config[:site]
       url += "?preview_theme_id=#{config[:theme_id]}" if config[:theme_id] && config[:theme_id].to_i > 0
       url
     end
@@ -180,13 +180,13 @@ module PosthavenTheme
 
     def send_asset(asset, quiet=false)
       return unless valid?(asset)
-      data = {:key => asset}
+      data = {key: asset}
       content = File.read(asset)
       if binary_file?(asset) || PosthavenTheme.is_binary_data?(content)
         content = File.open(asset, "rb") { |io| io.read }
-        data.merge!(:attachment => Base64.encode64(content))
+        data.merge!(attachment: Base64.encode64(content))
       else
-        data.merge!(:value => content)
+        data.merge!(value: content)
       end
 
       response = show_during("[#{timestamp}] Uploading: #{asset}", quiet) do

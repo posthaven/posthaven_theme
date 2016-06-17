@@ -50,15 +50,15 @@ module PosthavenTheme
     end
 
     it "should generate the shop path URL to the query parameter preview_theme_id if the id is present" do
-      @cli.mock_config = {store: 'somethingfancy.posthaven.com', theme_id: 12345}
+      @cli.mock_config = {site: 'somethingfancy.posthaven.com', theme_id: 12345}
       assert_equal "somethingfancy.posthaven.com?preview_theme_id=12345", @cli.shop_theme_url
     end
 
     it "should generate the shop path URL withouth the preview_theme_id if the id is not present" do
-      @cli.mock_config = {store: 'somethingfancy.posthaven.com'}
+      @cli.mock_config = {site: 'somethingfancy.posthaven.com'}
       assert_equal "somethingfancy.posthaven.com", @cli.shop_theme_url
 
-      @cli.mock_config = {store: 'somethingfancy.posthaven.com', theme_id: ''}
+      @cli.mock_config = {site: 'somethingfancy.posthaven.com', theme_id: ''}
       assert_equal "somethingfancy.posthaven.com", @cli.shop_theme_url
     end
 

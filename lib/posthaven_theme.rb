@@ -15,7 +15,8 @@ module PosthavenTheme
 
   def self.manage_timer(response)
     return unless response.headers['x-posthaven-api-call-limit']
-    @@current_api_call_count, @@total_api_calls = response.headers['x-posthaven-api-call-limit'].split('/')
+    @@current_api_call_count, @@total_api_calls = response.headers['x-posthaven-api-call-limit']
+                                                          .split('/')
     @@current_timer = Time.now if @current_timer.nil?
   end
 
@@ -122,7 +123,7 @@ module PosthavenTheme
 
   def self.backend
     basic_auth config[:api_key], config[:password]
-    base_uri "#{config[:protocol] || 'http'}://#{config[:store]}"
+    base_uri "http://#{config[:site]}"
     PosthavenTheme
   end
 
