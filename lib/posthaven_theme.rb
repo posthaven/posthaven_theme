@@ -9,6 +9,8 @@ module PosthavenTheme
   TIMER_RESET = 10
   PERMIT_LOWER_LIMIT = 3
 
+  BASE_PATH = '/posthaven'
+
   def self.test?
     ENV['test']
   end
@@ -122,8 +124,8 @@ module PosthavenTheme
   private
 
   def self.backend
-    basic_auth config[:api_key], config[:password]
-    base_uri "http://#{config[:site]}/posthaven"
+    basic_auth config[:email], config[:api_key]
+    base_uri "http://#{config[:site]}/#{BASE_PATH}"
     PosthavenTheme
   end
 

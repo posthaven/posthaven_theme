@@ -44,9 +44,10 @@ module PosthavenTheme
       end
     end
 
-    desc "configure API_KEY PASSWORD SITE THEME_ID", "generate a config file for the site to connect to"
-    def configure(api_key=nil, password=nil, site=nil, theme_id=nil)
-      config = {api_key: api_key, password: password, site: site, theme_id: theme_id}
+    desc 'configure EMAIL API_KEY SITE THEME_ID',
+         'generate a config file for the site to connect to'
+    def configure(email=nil, api_key=nil, site=nil, theme_id=nil)
+      config = {email: email, api_key: api_key, site: site, theme_id: theme_id}
       create_file('config.yml', config.to_yaml)
     end
 
