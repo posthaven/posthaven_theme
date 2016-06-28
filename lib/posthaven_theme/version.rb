@@ -1,3 +1,3 @@
 module PosthavenTheme
-  VERSION = "0.0.21"
+  VERSION = "0.0.1"
 end
