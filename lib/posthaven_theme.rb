@@ -1,4 +1,5 @@
 require 'httparty'
+
 module PosthavenTheme
   include HTTParty
   @@current_api_call_count = 0
@@ -7,7 +8,6 @@ module PosthavenTheme
   NOOPParser = Proc.new {|data, format| {} }
   TIMER_RESET = 10
   PERMIT_LOWER_LIMIT = 3
-  LAST_KNOWN_STABLE = "v1.1.0"
 
   def self.test?
     ENV['test']
@@ -51,7 +51,7 @@ module PosthavenTheme
   def self.asset_list
     # HTTParty parser chokes on assest listing, have it noop
     # and then use a rel JSON parser.
-    response = backend.get(path, :parser => NOOPParser)
+    response = backend.get(path, parser: NOOPParser)
     manage_timer(response)
 
     assets = JSON.parse(response.body)["assets"].collect {|a| a['key'] }
@@ -60,7 +60,7 @@ module PosthavenTheme
   end
 
   def self.get_asset(asset)
-    response = backend.get(path, :query =>{:asset => {:key => asset}}, :parser => NOOPParser)
+    response = backend.get(path, query: {asset: {key: asset}}, parser: NOOPParser)
     manage_timer(response)
 
     # HTTParty json parsing is broken?
@@ -70,13 +70,13 @@ module PosthavenTheme
   end
 
   def self.send_asset(data)
-    response = backend.put(path, :body =>{:asset => data})
+    response = backend.put(path, body: {asset: data})
     manage_timer(response)
     response
   end
 
   def self.delete_asset(asset)
-    response = backend.delete(path, :body =>{:asset => {:key => asset}})
+    response = backend.delete(path, body: {asset: {key: asset}})
     manage_timer(response)
     response
   end
@@ -96,7 +96,7 @@ module PosthavenTheme
   end
 
   def self.path
-    @path ||= config[:theme_id] ? "/admin/themes/#{config[:theme_id]}/assets.json" : "/admin/assets.json"
+    @path ||= config[:theme_id] ? "/themes/#{config[:theme_id]}/assets.json" : "/assets.json"
   end
 
   def self.ignore_files
@@ -123,7 +123,7 @@ module PosthavenTheme
 
   def self.backend
     basic_auth config[:api_key], config[:password]
-    base_uri "http://#{config[:site]}"
+    base_uri "http://#{config[:site]}/posthaven"
     PosthavenTheme
   end
 
@@ -131,7 +131,7 @@ module PosthavenTheme
     count = 0
     while true do
       Kernel.sleep(count)
-      response = backend.get("/admin/themes/#{theme['id']}.json")
+      response = backend.get("/themes/#{theme['id']}.json")
       theme = JSON.parse(response.body)['theme']
       return theme if theme['previewable']
       count += 5

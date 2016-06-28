@@ -25,31 +25,31 @@ TODO - config
 Download all the theme files
 
 ```
-theme download
+phtheme download
 ```
 
 Upload a theme file
 
 ```
-theme upload assets/layout.liquid
+phtheme upload assets/layout.liquid
 ```
 
 Remove a theme file
 
 ```
-theme remove assets/layout.liquid
+phtheme remove assets/layout.liquid
 ```
 
 Completely replace shop theme assets with the local assets
 
 ```
-theme replace
+phtheme replace
 ```
 
 Watch the theme directory and upload any files as they change
 
 ```
-theme watch
+phtheme watch
 ```
 
 # Thanks 

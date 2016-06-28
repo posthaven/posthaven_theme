@@ -50,12 +50,12 @@ module PosthavenTheme
       create_file('config.yml', config.to_yaml)
     end
 
-    desc "open", "open the site in your browser"
-    def open(*keys)
-      if Launchy.open shop_theme_url
-        say("Done.", :green)
-      end
-    end
+    # desc "open", "open the site in your browser"
+    # def open(*keys)
+    #   if Launchy.open site_theme_url
+    #     say("Done.", :green)
+    #   end
+    # end
 
     desc "upload FILE", "upload all theme assets to shop"
     method_option :quiet, type: :boolean, default: false
@@ -67,10 +67,10 @@ module PosthavenTheme
       say("Done.", :green) unless options['quiet']
     end
 
-    desc "replace FILE", "completely replace shop theme assets with local theme assets"
+    desc "replace FILE", "completely replace site theme assets with local theme assets"
     method_option :quiet, type: :boolean, default: false
     def replace(*keys)
-      say("Are you sure you want to completely replace your shop theme assets? This is not undoable.", :yellow)
+      say("Are you sure you want to completely replace your site theme assets? This is not undoable.", :yellow)
       if ask("Continue? (Y/N): ") == "Y"
         # only delete files on remote that are not present locally
         # files present on remote and present locally get overridden anyway
@@ -134,7 +134,7 @@ module PosthavenTheme
       @config ||= YAML.load_file 'config.yml'
     end
 
-    def shop_theme_url
+    def site_theme_url
       url = config[:site]
       url += "?preview_theme_id=#{config[:theme_id]}" if config[:theme_id] && config[:theme_id].to_i > 0
       url
