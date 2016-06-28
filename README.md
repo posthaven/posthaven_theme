@@ -1,12 +1,14 @@
 # Posthaven Theme
 
+The `posthaven_theme` gem provides command line tools for developing a Posthaven theme on your computer and pushing updates to Posthaven.
+
 # Requirements
 
 This gem with Ruby 2.0 and above.
 
 # Installation
 
-To install the posthaven_theme gem use 'gem install' (you might have use 'sudo gem install')
+To install the `posthaven_theme` gem use 'gem install' (you might have use 'sudo gem install')
 
 ```
 gem install posthaven_theme [optional_theme_id]
