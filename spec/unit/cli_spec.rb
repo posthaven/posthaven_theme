@@ -35,7 +35,7 @@ module PosthavenTheme
     end
 
     it "should remove assets that are not a part of the white list" do
-      @cli.local_files = ['assets/image.png', 'config.yml', 'layout/theme.liquid', 'locales/en.default.json']
+      @cli.local_files = ['assets/image.png', 'config.yml', 'layouts/theme.liquid', 'locales/en.default.json']
       local_assets_list = @cli.send(:local_assets_list)
       assert_equal 3, local_assets_list.length
       assert_equal false, local_assets_list.include?('config.yml')
@@ -43,23 +43,10 @@ module PosthavenTheme
 
     it "should remove assets that are part of the ignore list" do
       PosthavenTheme.config = {ignore_files: ['config/settings.html']}
-      @cli.local_files = ['assets/image.png', 'layout/theme.liquid', 'config/settings.html']
+      @cli.local_files = ['assets/image.png', 'layouts/theme.liquid', 'config/settings.html']
       local_assets_list = @cli.send(:local_assets_list)
       assert_equal 2, local_assets_list.length
       assert_equal false, local_assets_list.include?('config/settings.html')
-    end
-
-    it "should generate the shop path URL to the query parameter preview_theme_id if the id is present" do
-      @cli.mock_config = {site: 'somethingfancy.posthaven.com', theme_id: 12345}
-      assert_equal "somethingfancy.posthaven.com?preview_theme_id=12345", @cli.shop_theme_url
-    end
-
-    it "should generate the shop path URL withouth the preview_theme_id if the id is not present" do
-      @cli.mock_config = {site: 'somethingfancy.posthaven.com'}
-      assert_equal "somethingfancy.posthaven.com", @cli.shop_theme_url
-
-      @cli.mock_config = {site: 'somethingfancy.posthaven.com', theme_id: ''}
-      assert_equal "somethingfancy.posthaven.com", @cli.shop_theme_url
     end
 
     it "should report binary files as such" do
