@@ -28,7 +28,7 @@ module PosthavenTheme
     include Thor::Actions
 
     IGNORE = %w(config.yml)
-    DEFAULT_WHITELIST = %w(layouts/ assets/ config/ snippets/ templates/ locales/)
+    DEFAULT_WHITELIST = %w(layouts/ assets/ config/ snippets/ templates/)
     TIMEFORMAT = "%H:%M:%S"
 
     tasks.keys.abbrev.each do |shortcut, command|
