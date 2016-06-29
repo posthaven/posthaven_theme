@@ -56,13 +56,13 @@ module PosthavenTheme
     response = backend.get(path, parser: NOOPParser)
     manage_timer(response)
 
-    assets = JSON.parse(response.body)["assets"].collect {|a| a['key'] }
+    assets = JSON.parse(response.body)["assets"].collect {|a| a['path'] }
     # Remove any .css files if a .css.liquid file exists
     assets.reject{|a| assets.include?("#{a}.liquid") }
   end
 
   def self.get_asset(asset)
-    response = backend.get(path, query: {asset: {key: asset}}, parser: NOOPParser)
+    response = backend.get(path, query: {asset: {path: asset}}, parser: NOOPParser)
     manage_timer(response)
 
     # HTTParty json parsing is broken?
@@ -78,7 +78,7 @@ module PosthavenTheme
   end
 
   def self.delete_asset(asset)
-    response = backend.delete(path, body: {asset: {key: asset}})
+    response = backend.delete(path, body: {asset: {path: asset}})
     manage_timer(response)
     response
   end

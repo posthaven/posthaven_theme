@@ -52,7 +52,7 @@ module PosthavenTheme
     end
 
     # desc "open", "open the site in your browser"
-    # def open(*keys)
+    # def open(*paths)
     #   if Launchy.open site_theme_url
     #     say("Done.", :green)
     #   end
@@ -60,8 +60,8 @@ module PosthavenTheme
 
     desc "upload FILE", "upload all theme assets to shop"
     method_option :quiet, type: :boolean, default: false
-    def upload(*keys)
-      assets = keys.empty? ? local_assets_list : keys
+    def upload(*paths)
+      assets = paths.empty? ? local_assets_list : paths
       assets.each do |asset|
         send_asset(asset, options['quiet'])
       end
@@ -70,16 +70,16 @@ module PosthavenTheme
 
     desc "replace FILE", "completely replace site theme assets with local theme assets"
     method_option :quiet, type: :boolean, default: false
-    def replace(*keys)
+    def replace(*paths)
       say("Are you sure you want to completely replace your site theme assets? This is not undoable.", :yellow)
       if ask("Continue? (Y/N): ") == "Y"
         # only delete files on remote that are not present locally
         # files present on remote and present locally get overridden anyway
-        remote_assets = keys.empty? ? (PosthavenTheme.asset_list - local_assets_list) : keys
+        remote_assets = paths.empty? ? (PosthavenTheme.asset_list - local_assets_list) : paths
         remote_assets.each do |asset|
           delete_asset(asset, options['quiet']) unless PosthavenTheme.ignore_files.any? { |regex| regex =~ asset }
         end
-        local_assets = keys.empty? ? local_assets_list : keys
+        local_assets = paths.empty? ? local_assets_list : paths
         local_assets.each do |asset|
           send_asset(asset, options['quiet'])
         end
@@ -89,9 +89,9 @@ module PosthavenTheme
 
     desc "remove FILE", "remove theme asset"
     method_option :quiet, type: :boolean, default: false
-    def remove(*keys)
-      keys.each do |key|
-        delete_asset(key, options['quiet'])
+    def remove(*paths)
+      paths.each do |path|
+        delete_asset(path, options['quiet'])
       end
       say("Done.", :green) unless options['quiet']
     end
@@ -162,10 +162,10 @@ module PosthavenTheme
       end
     end
 
-    def download_asset(key)
-      return unless valid?(key)
+    def download_asset(path)
+      return unless valid?(path)
       notify_and_sleep("Approaching limit of API permits. Naptime until more permits become available!") if PosthavenTheme.needs_sleep?
-      asset = PosthavenTheme.get_asset(key)
+      asset = PosthavenTheme.get_asset(path)
       if asset['value']
         # For CRLF line endings
         content = asset['value'].gsub("\r", "")
@@ -175,13 +175,13 @@ module PosthavenTheme
         format = "w+b"
       end
 
-      FileUtils.mkdir_p(File.dirname(key))
-      File.open(key, format) {|f| f.write content} if content
+      FileUtils.mkdir_p(File.dirname(path))
+      File.open(path, format) {|f| f.write content} if content
     end
 
     def send_asset(asset, quiet=false)
       return unless valid?(asset)
-      data = {key: asset}
+      data = {path: asset}
       content = File.read(asset)
       if binary_file?(asset) || PosthavenTheme.is_binary_data?(content)
         content = File.open(asset, "rb") { |io| io.read }
@@ -200,15 +200,15 @@ module PosthavenTheme
       end
     end
 
-    def delete_asset(key, quiet=false)
-      return unless valid?(key)
-      response = show_during("[#{timestamp}] Removing: #{key}", quiet) do
-        PosthavenTheme.delete_asset(key)
+    def delete_asset(path, quiet=false)
+      return unless valid?(path)
+      response = show_during("[#{timestamp}] Removing: #{path}", quiet) do
+        PosthavenTheme.delete_asset(path)
       end
       if response.success?
-        say("[#{timestamp}] Removed: #{key}", :green) unless quiet
+        say("[#{timestamp}] Removed: #{path}", :green) unless quiet
       else
-        report_error(Time.now, "Could not remove #{key}", response)
+        report_error(Time.now, "Could not remove #{path}", response)
       end
     end
 
@@ -217,9 +217,9 @@ module PosthavenTheme
       PosthavenTheme.sleep
     end
 
-    def valid?(key)
-      return true if DEFAULT_WHITELIST.include?(key.split('/').first + "/")
-      say("'#{key}' is not in a valid file for theme uploads", :yellow)
+    def valid?(path)
+      return true if DEFAULT_WHITELIST.include?(path.split('/').first + "/")
+      say("'#{path}' is not in a valid file for theme uploads", :yellow)
       say("Files need to be in one of the following subdirectories: #{DEFAULT_WHITELIST.join(' ')}", :yellow)
       false
     end
