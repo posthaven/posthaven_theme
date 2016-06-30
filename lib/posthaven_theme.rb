@@ -9,7 +9,7 @@ module PosthavenTheme
   TIMER_RESET = 10
   PERMIT_LOWER_LIMIT = 3
 
-  BASE_PATH = '/posthaven'
+  DEFAULT_API_ENDPOINT = 'https://api.posthaven.com/'
 
   def self.test?
     ENV['test']
@@ -56,13 +56,13 @@ module PosthavenTheme
     response = backend.get(path, parser: NOOPParser)
     manage_timer(response)
 
-    assets = JSON.parse(response.body)["assets"].collect {|a| a['path'] }
+    assets = JSON.parse(response.body).collect {|a| a['path'] }
     # Remove any .css files if a .css.liquid file exists
     assets.reject{|a| assets.include?("#{a}.liquid") }
   end
 
   def self.get_asset(asset)
-    response = backend.get(path, query: {asset: {path: asset}}, parser: NOOPParser)
+    response = backend.get(path(asset), query: {path: asset}, parser: NOOPParser)
     manage_timer(response)
 
     # HTTParty json parsing is broken?
@@ -72,13 +72,13 @@ module PosthavenTheme
   end
 
   def self.send_asset(data)
-    response = backend.put(path, body: {asset: data})
+    response = backend.put(path(data[:path]), query: {path: data[:path]}, body: {asset: data})
     manage_timer(response)
     response
   end
 
   def self.delete_asset(asset)
-    response = backend.delete(path, body: {asset: {path: asset}})
+    response = backend.delete(path(asset), query: {path: asset})
     manage_timer(response)
     response
   end
@@ -97,8 +97,8 @@ module PosthavenTheme
     @config = config
   end
 
-  def self.path
-    @path ||= config[:theme_id] ? "/themes/#{config[:theme_id]}/assets.json" : "/assets.json"
+  def self.path(asset_path = nil)
+    asset_path ? "/asset.json" : '/assets.json'
   end
 
   def self.ignore_files
@@ -125,7 +125,7 @@ module PosthavenTheme
 
   def self.backend
     basic_auth config[:email], config[:api_key]
-    base_uri "http://#{config[:site]}/#{BASE_PATH}"
+    base_uri (config[:api_endpoint] || DEFAULT_API_ENDPOINT) + "/themes/#{config[:theme_id]}"
     PosthavenTheme
   end
 
