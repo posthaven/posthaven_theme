@@ -4,14 +4,27 @@ The `posthaven_theme` gem provides command line tools for developing a Posthaven
 
 # Requirements
 
-This gem with Ruby 2.0 and above.
+## Ruby
+
+This gem requires Ruby 2.0 or above. 
+
+## Posthaven
+
+### API Key
+
+Get your [Posthaven account API key here](https://posthaven.com/account/api_key).
+
+### Theme ID
+
+You'll need to create a new theme or copy an existing theme into your account. Once done you can navigate to the theme editor for your theme and find the theme id in the URL.
+
 
 # Installation
 
 To install the `posthaven_theme` gem use 'gem install' (you might have use 'sudo gem install')
 
 ```
-gem install posthaven_theme [optional_theme_id]
+gem install posthaven_theme
 ```
 
 to update to the latest version
@@ -22,18 +35,17 @@ gem update posthaven_theme
 
 # Usage
 
+List available commands
+
+```
+phtheme help
+```
+
 Generate a configuration file
 
 ```
-phtheme configure email@example.org user-api-key example.posthaven.com
+phtheme configure email@example.org user-api-key theme-id
 
-```
-
-
-Download all the theme files
-
-```
-phtheme download
 ```
 
 Upload a theme file
@@ -48,7 +60,7 @@ Remove a theme file
 phtheme remove assets/layout.liquid
 ```
 
-Completely replace shop theme assets with the local assets
+Completely replace site theme assets with the local assets
 
 ```
 phtheme replace

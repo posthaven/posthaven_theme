@@ -58,7 +58,7 @@ module PosthavenTheme
     #   end
     # end
 
-    desc "upload FILE", "upload all theme assets to shop"
+    desc "upload FILE", "upload all theme assets to site"
     method_option :quiet, type: :boolean, default: false
     def upload(*paths)
       assets = paths.empty? ? local_assets_list : paths

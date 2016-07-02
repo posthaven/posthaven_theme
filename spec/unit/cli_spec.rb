@@ -12,12 +12,6 @@ module PosthavenTheme
       def config
         @mock_config || super
       end
-
-      desc "",""
-      def shop_theme_url
-        super
-      end
-
       desc "",""
       def binary_file?(file)
         super

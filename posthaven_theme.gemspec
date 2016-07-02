@@ -13,6 +13,8 @@ Gem::Specification.new do |s|
   s.description = %q{Command line tool to help with developing Posthaven themes. Provides simple commands to download, upload and delete files from a theme. Also includes the watch command to watch a directory and upload files as they change.}
   s.license     = 'MIT'
 
+  s.required_ruby_version = '>= 2.0'
+
   s.rubyforge_project = "posthaven_theme"
   s.add_dependency('thor', '>= 0.14.4')
   s.add_dependency('httparty', '~> 0.13.0')
