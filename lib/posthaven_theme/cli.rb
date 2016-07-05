@@ -18,10 +18,11 @@ module PosthavenTheme
     {mimetype: 'image/svg+xml', extensions: %w(svg svgz)}
   ]
 
-  def self.configureMimeMagic
+  def self.configure_mime_magic
     PosthavenTheme::EXTENSIONS.each do |extension|
       MimeMagic.add(extension.delete(:mimetype), extension)
     end
+
   end
 
   class Cli < Thor
@@ -35,13 +36,18 @@ module PosthavenTheme
       map shortcut => command.to_sym
     end
 
+    def initialize(args = [], local_options = {}, config = {})
+      setup_config
+      super
+    end
+
     desc "check", "check configuration"
     def check
       if PosthavenTheme.check_config
         say("Configuration [OK]", :green)
-      else
-        say("Configuration [FAIL]", :red)
       end
+    rescue PosthavenTheme::APIError => e
+      report_error(Time.now, "Configuration [FAIL]", e)
     end
 
     desc 'configure EMAIL API_KEY THEME_ID',
@@ -50,13 +56,6 @@ module PosthavenTheme
       config = {email: email, api_key: api_key, theme_id: theme_id}
       create_file('config.yml', config.to_yaml)
     end
-
-    # desc "open", "open the site in your browser"
-    # def open(*paths)
-    #   if Launchy.open site_theme_url
-    #     say("Done.", :green)
-    #   end
-    # end
 
     desc "upload FILE", "upload all theme assets to site"
     method_option :quiet, type: :boolean, default: false
@@ -71,13 +70,17 @@ module PosthavenTheme
     desc "replace FILE", "completely replace site theme assets with local theme assets"
     method_option :quiet, type: :boolean, default: false
     def replace(*paths)
-      say("Are you sure you want to completely replace your site theme assets? This is not undoable.", :yellow)
+      say("Are you sure you want to completely replace your site theme assets? " +
+          "This is not undoable.",
+          :yellow)
       if ask("Continue? (Y/N): ") == "Y"
         # only delete files on remote that are not present locally
         # files present on remote and present locally get overridden anyway
         remote_assets = paths.empty? ? (PosthavenTheme.asset_list - local_assets_list) : paths
         remote_assets.each do |asset|
-          delete_asset(asset, options['quiet']) unless PosthavenTheme.ignore_files.any? { |regex| regex =~ asset }
+          unless PosthavenTheme.ignore_files.any? { |regex| regex =~ asset }
+            delete_asset(asset, options['quiet'])
+          end
         end
         local_assets = paths.empty? ? local_assets_list : paths
         local_assets.each do |asset|
@@ -85,6 +88,8 @@ module PosthavenTheme
         end
         say("Done.", :green) unless options['quiet']
       end
+    rescue PosthavenTheme::APIError => e
+      report_error(Time.now, "Replacement failed.", e)
     end
 
     desc "remove FILE", "remove theme asset"
@@ -96,7 +101,9 @@ module PosthavenTheme
       say("Done.", :green) unless options['quiet']
     end
 
-    desc "watch", "upload and delete individual theme assets as they change, use the --keep_files flag to disable remote file deletion"
+    desc "watch",
+         "upload and delete individual theme assets as they change, " +
+         "use the --keep_files flag to disable remote file deletion"
     method_option :quiet, type: :boolean, default: false
     method_option :keep_files, type: :boolean, default: false
     def watch
@@ -117,13 +124,14 @@ module PosthavenTheme
       end
     end
 
-    desc "systeminfo", "print out system information and actively loaded libraries for aiding in submitting bug reports"
+    desc "systeminfo",
+         "print out system information and actively loaded libraries for aiding in submitting bug reports"
     def systeminfo
       ruby_version = "#{RUBY_VERSION}"
       ruby_version += "-p#{RUBY_PATCHLEVEL}" if RUBY_PATCHLEVEL
       puts "Ruby: v#{ruby_version}"
       puts "Operating System: #{RUBY_PLATFORM}"
-      %w(Thor Listen HTTParty Launchy).each do |lib|
+      %w(Thor Listen HTTParty).each do |lib|
         require "#{lib.downcase}/version"
         puts "#{lib}: v" +  Kernel.const_get("#{lib}::VERSION")
       end
@@ -177,6 +185,8 @@ module PosthavenTheme
 
       FileUtils.mkdir_p(File.dirname(path))
       File.open(path, format) {|f| f.write content} if content
+    rescue PosthavenTheme::APIError => e
+      report_error(Time.now, "Could not download #{path}", e)
     end
 
     def send_asset(asset, quiet=false)
@@ -195,9 +205,9 @@ module PosthavenTheme
       end
       if response.success?
         say("[#{timestamp}] Uploaded: #{asset}", :green) unless quiet
-      else
-        report_error(Time.now, "Could not upload #{asset}", response)
       end
+    rescue PosthavenTheme::APIError => e
+      report_error(Time.now, "Could not upload #{asset}", e)
     end
 
     def delete_asset(path, quiet=false)
@@ -207,9 +217,9 @@ module PosthavenTheme
       end
       if response.success?
         say("[#{timestamp}] Removed: #{path}", :green) unless quiet
-      else
-        report_error(Time.now, "Could not remove #{path}", response)
       end
+    rescue PosthavenTheme::APIError => e
+      report_error(Time.now, "Could not remove #{path}", e)
     end
 
     def notify_and_sleep(message)
@@ -230,26 +240,9 @@ module PosthavenTheme
       mime.nil? || !mime.text?
     end
 
-    def report_error(time, message, response)
+    def report_error(time, message, error)
       say("[#{timestamp(time)}] Error: #{message}", :red)
-      say("Error Details: #{errors_from_response(response)}", :yellow)
-    end
-
-    def errors_from_response(response)
-      object = {status: response.headers['status'], request_id: response.headers['x-request-id']}
-
-      errors = response.parsed_response ? response.parsed_response["errors"] : response.body
-
-      object[:errors] = case errors
-                        when NilClass
-                          ''
-                        when String
-                          errors.strip
-                        else
-                          errors.values.join(", ")
-                        end
-      object.delete(:errors) if object[:errors].length <= 0
-      object
+      say("Error Details: #{error.message}", :yellow)
     end
 
     def show_during(message = '', quiet = false, &block)
@@ -262,6 +255,16 @@ module PosthavenTheme
     def timestamp(time = Time.now)
       time.strftime(TIMEFORMAT)
     end
+
+    def setup_config
+      PosthavenTheme.config = if File.exist? 'config.yml'
+        YAML.load(File.read('config.yml'))
+      else
+        say "config.yml does not exist!", :red
+        {}
+      end
+    end
   end
 end
-PosthavenTheme.configureMimeMagic
+
+PosthavenTheme.configure_mime_magic

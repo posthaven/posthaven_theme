@@ -5,11 +5,37 @@ module PosthavenTheme
   @@current_api_call_count = 0
   @@total_api_calls = 40
 
+  class APIError < StandardError
+    attr_accessor :response
+
+    def initialize(response)
+      @response = response
+    end
+
+    def message
+      "#{@response.code} #{response_error_message(response)}"
+    end
+
+    private
+
+    def response_error_message(response)
+      errors = @response.parsed_response ? @response.parsed_response["errors"] : @response.body
+      case errors
+      when NilClass
+        ''
+      when String
+        errors.strip
+      when Array
+        errors.join(", ")
+      end
+    end
+  end
+
   NOOPParser = Proc.new {|data, format| {} }
   TIMER_RESET = 10
   PERMIT_LOWER_LIMIT = 3
 
-  DEFAULT_API_ENDPOINT = 'https://api.posthaven.com/'
+  DEFAULT_API_ENDPOINT = 'https://api.posthaven.com/v1'
 
   def self.test?
     ENV['test']
@@ -51,34 +77,43 @@ module PosthavenTheme
 
 
   def self.asset_list
-    # HTTParty parser chokes on assest listing, have it noop
-    # and then use a rel JSON parser.
-    response = backend.get(path, parser: NOOPParser)
+    response = get(path)
     manage_timer(response)
 
-    assets = JSON.parse(response.body).collect {|a| a['path'] }
-    # Remove any .css files if a .css.liquid file exists
-    assets.reject{|a| assets.include?("#{a}.liquid") }
+    if response.success?
+      assets = JSON.parse(response.body).collect {|a| a['path'] }
+      # Remove any .css files if a .css.liquid file exists
+      assets.reject{|a| assets.include?("#{a}.liquid") }
+    else
+      raise APIError.new(response)
+    end
   end
 
   def self.get_asset(asset)
-    response = backend.get(path(asset), query: {path: asset}, parser: NOOPParser)
+    response = get(path(asset), query: {path: asset})
     manage_timer(response)
 
-    # HTTParty json parsing is broken?
-    asset = response.code == 200 ? JSON.parse(response.body)["asset"] : {}
-    asset['response'] = response
-    asset
+    if response.success?
+      asset = response.code == 200 ? response.parsed_body["asset"] : {}
+      asset['response'] = response
+      asset
+    else
+      raise APIError.new(response)
+    end
   end
 
   def self.send_asset(data)
-    response = backend.put(path(data[:path]), query: {path: data[:path]}, body: {asset: data})
+    response = put(path(data[:path]), query: {path: data[:path]}, body: {asset: data})
+    raise APIError.new(response)  unless response.success?
+
     manage_timer(response)
     response
   end
 
   def self.delete_asset(asset)
-    response = backend.delete(path(asset), query: {path: asset})
+    response = delete(path(asset), query: {path: asset})
+    raise APIError.new(response)  unless response.success?
+
     manage_timer(response)
     response
   end
@@ -95,6 +130,7 @@ module PosthavenTheme
 
   def self.config=(config)
     @config = config
+    setup
   end
 
   def self.path(asset_path = nil)
@@ -113,30 +149,26 @@ module PosthavenTheme
     if string.respond_to?(:encoding)
       string.encoding == "US-ASCII"
     else
-      ( string.count( "^ -~", "^\r\n" ).fdiv(string.size) > 0.3 || string.index( "\x00" ) ) unless string.empty?
+      unless string.empty?
+        (string.count("^ -~", "^\r\n").fdiv(string.size) > 0.3 || string.index("\x00"))
+      end
     end
   end
 
   def self.check_config
-    backend.get(path).code == 200
+    if (response = get(path)).success?
+      true
+    else
+      raise APIError.new(response)
+    end
   end
 
   private
 
-  def self.backend
+  def self.setup
     basic_auth config[:email], config[:api_key]
     base_uri (config[:api_endpoint] || DEFAULT_API_ENDPOINT) + "/themes/#{config[:theme_id]}"
-    PosthavenTheme
-  end
-
-  def self.watch_until_processing_complete(theme)
-    count = 0
-    while true do
-      Kernel.sleep(count)
-      response = backend.get("/themes/#{theme['id']}.json")
-      theme = JSON.parse(response.body)['theme']
-      return theme if theme['previewable']
-      count += 5
-    end
+    debug_output $stdout  if config[:debug]
+    require 'resolv-replace'  if base_uri.include?(':')
   end
 end

@@ -21,7 +21,6 @@ Gem::Specification.new do |s|
   s.add_dependency('json', '~> 1.8.0')
   s.add_dependency('mimemagic')
   s.add_dependency('filewatcher')
-  s.add_dependency('launchy')
 
   s.add_development_dependency 'rake'
   s.add_development_dependency 'minitest', '>= 5.0.0'
