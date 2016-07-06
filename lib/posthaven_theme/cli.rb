@@ -32,18 +32,19 @@ module PosthavenTheme
     DEFAULT_WHITELIST = %w(layouts/ assets/ config/ snippets/ templates/)
     TIMEFORMAT = "%H:%M:%S"
 
-    tasks.keys.abbrev.each do |shortcut, command|
-      map shortcut => command.to_sym
-    end
+    NON_CONFIG_COMMANDS = %w{help configure systeminfo}
 
     def initialize(args = [], local_options = {}, config = {})
-      setup_config
+      unless NON_CONFIG_COMMANDS.include?(config[:current_command].name)
+        setup_config
+        validate_config!
+      end
       super
     end
 
     desc "check", "check configuration"
     def check
-      if PosthavenTheme.check_config
+      if PosthavenTheme.asset_list
         say("Configuration [OK]", :green)
       end
     rescue PosthavenTheme::APIError => e
@@ -51,10 +52,15 @@ module PosthavenTheme
     end
 
     desc 'configure EMAIL API_KEY THEME_ID',
-         'generate a config file for the site to connect to'
+         'generate a config file – see https://github.com/posthaven/posthaven_theme/#posthaven'
     def configure(email=nil, api_key=nil, theme_id=nil)
-      config = {email: email, api_key: api_key, theme_id: theme_id}
-      create_file('config.yml', config.to_yaml)
+      if [email, api_key, theme_id].any? { |v| v.nil? }
+        say('An email, api key and theme id are required!', :red)
+        help(:configure)
+      else
+        config = {email: email, api_key: api_key, theme_id: theme_id}
+        create_file('config.yml', config.to_yaml)
+      end
     end
 
     desc "upload FILE", "upload all theme assets to site"
@@ -257,11 +263,18 @@ module PosthavenTheme
     end
 
     def setup_config
-      PosthavenTheme.config = if File.exist? 'config.yml'
-        YAML.load(File.read('config.yml'))
-      else
-        say "config.yml does not exist!", :red
-        {}
+      if File.exist?('config.yml')
+        PosthavenTheme.config = YAML.load(File.read('config.yml'))
+      end
+    end
+
+    def validate_config!
+      if PosthavenTheme.config.empty?
+        say 'config.yml does not exist or is empty!', :red
+        exit
+      elsif %i{api_key theme_id}.any? { |k| PosthavenTheme.config[k].nil? }
+        say 'config.yml must include :api_key: and :theme_id:!', :red
+        exit
       end
     end
   end

@@ -119,17 +119,11 @@ module PosthavenTheme
   end
 
   def self.config
-    @config ||= if File.exist? 'config.yml'
-      config = YAML.load(File.read('config.yml'))
-      config
-    else
-      puts "config.yml does not exist!" unless test?
-      {}
-    end
+    @config
   end
 
   def self.config=(config)
-    @config = config
+    @config = config && Hash[config.map { |k, v| [k.to_sym, v] }]
     setup
   end
 
@@ -152,14 +146,6 @@ module PosthavenTheme
       unless string.empty?
         (string.count("^ -~", "^\r\n").fdiv(string.size) > 0.3 || string.index("\x00"))
       end
-    end
-  end
-
-  def self.check_config
-    if (response = get(path)).success?
-      true
-    else
-      raise APIError.new(response)
     end
   end
 
