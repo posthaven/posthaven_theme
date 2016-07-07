@@ -6,7 +6,6 @@ require 'base64'
 require 'fileutils'
 require 'json'
 require 'filewatcher'
-require 'launchy'
 require 'mimemagic'
 
 module PosthavenTheme
