@@ -81,9 +81,7 @@ module PosthavenTheme
     manage_timer(response)
 
     if response.success?
-      assets = JSON.parse(response.body).collect {|a| a['path'] }
-      # Remove any .css files if a .css.liquid file exists
-      assets.reject{|a| assets.include?("#{a}.liquid") }
+      response.parsed_response['data'].collect {|a| a['path'] }
     else
       raise APIError.new(response)
     end
@@ -94,7 +92,7 @@ module PosthavenTheme
     manage_timer(response)
 
     if response.success?
-      asset = response.code == 200 ? response.parsed_body["asset"] : {}
+      asset = response.code == 200 ? response.parsed_response["data"] : {}
       asset['response'] = response
       asset
     else
