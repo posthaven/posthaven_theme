@@ -75,13 +75,17 @@ module PosthavenTheme
     desc "replace FILE", "completely replace site theme assets with local theme assets"
     method_option :quiet, type: :boolean, default: false
     def replace(*paths)
-      say("Are you sure you want to completely replace your site theme assets? " +
-          "This is not undoable.",
+      say('Are you sure you want to completely replace your site theme assets? ' +
+          'This is not undoable.',
           :yellow)
-      if ask("Continue? (Y/N): ") == "Y"
+      if ask('Continue? (Y/N): ') == 'Y'
         # only delete files on remote that are not present locally
         # files present on remote and present locally get overridden anyway
-        remote_assets = paths.empty? ? (PosthavenTheme.asset_list - local_assets_list) : paths
+        remote_assets = if paths.empty?
+                          (PosthavenTheme.asset_list.map { |a| a['path'] } - local_assets_list)
+                        else
+                          paths
+                        end
         remote_assets.each do |asset|
           unless PosthavenTheme.ignore_files.any? { |regex| regex =~ asset }
             delete_asset(asset, options['quiet'])

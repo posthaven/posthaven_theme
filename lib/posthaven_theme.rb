@@ -75,45 +75,28 @@ module PosthavenTheme
     "[API Limit: #{@@current_api_call_count || "??"}/#{@@total_api_calls || "??"}]"
   end
 
+  def self.theme_list
+    handle_response(get(themes_path))
+  end
+
+  def self.create_theme(data)
+    handle_response(post(themes_path, body: {theme: data}))
+  end
 
   def self.asset_list
-    response = get(path)
-    manage_timer(response)
-
-    if response.success?
-      response.parsed_response['data'].collect { |a| a['path'] }
-    else
-      raise APIError.new(response)
-    end
+    handle_response(get(assets_path))
   end
 
   def self.get_asset(asset)
-    response = get(path(asset), query: {path: asset})
-    manage_timer(response)
-
-    if response.success?
-      asset = response.code == 200 ? response.parsed_response["data"] : {}
-      asset['response'] = response
-      asset
-    else
-      raise APIError.new(response)
-    end
+    handle_response(get(asset_path(asset)))
   end
 
   def self.send_asset(data)
-    response = put(path(data[:path]), query: {path: data[:path]}, body: {asset: data})
-    raise APIError.new(response)  unless response.success?
-
-    manage_timer(response)
-    response
+    handle_response(put(asset_path(data[:path]), body: {asset: data}))
   end
 
   def self.delete_asset(asset)
-    response = delete(path(asset), query: {path: asset})
-    raise APIError.new(response)  unless response.success?
-
-    manage_timer(response)
-    response
+    handle_response(delete(asset_path(asset)))
   end
 
   def self.config
@@ -125,8 +108,18 @@ module PosthavenTheme
     setup
   end
 
-  def self.path(asset_path = nil)
-    asset_path ? "/asset.json" : '/assets.json'
+  def self.themes_path
+    '/themes.json'
+  end
+  def self.theme_path(theme_id = config[:theme_id])
+    "/themes/#{theme_id}"
+  end
+
+  def self.assets_path
+    theme_path + "/assets.json"
+  end
+  def self.asset_path(path)
+    theme_path + "/asset.json?path=#{path}"
   end
 
   def self.ignore_files
@@ -149,10 +142,27 @@ module PosthavenTheme
 
   private
 
+  def self.handle_response(response)
+    manage_timer(response)
+
+    if response.success?
+      if response.parsed_response
+        response.parsed_response["data"]
+      else
+        response
+      end
+    else
+      raise APIError.new(response)
+    end
+  end
+
   def self.setup
+    # Basics
     basic_auth config[:email], config[:api_key]
-    base_uri (config[:api_endpoint] || DEFAULT_API_ENDPOINT) + "/themes/#{config[:theme_id]}"
-    debug_output $stdout  if config[:debug]
+    base_uri (config[:api_endpoint] || DEFAULT_API_ENDPOINT)
+
+    # Dev
+    debug_output $stdout  if config[:debug] || ENV['PHTHEME_DEBUG']
     require 'resolv-replace'  if base_uri.include?(':')
     default_options.update(verify: false)  if ENV['PHTHEME_IGNORE_SSL_VERIFY']
   end
