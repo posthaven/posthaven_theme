@@ -21,7 +21,6 @@ module PosthavenTheme
     PosthavenTheme::EXTENSIONS.each do |extension|
       MimeMagic.add(extension.delete(:mimetype), extension)
     end
-
   end
 
   class Cli < Thor
@@ -41,28 +40,36 @@ module PosthavenTheme
       super
     end
 
-    desc "check", "check configuration"
+    desc "check", "Check configuration"
     def check
-      if PosthavenTheme.asset_list
-        say("Configuration [OK]", :green)
-      end
+      say('Configuration [OK]', :green)  if PosthavenTheme.asset_list
     rescue PosthavenTheme::APIError => e
-      report_error(Time.now, "Configuration [FAIL]", e)
+      report_error(Time.now, 'Configuration [FAIL]', e)
     end
 
-    desc 'configure EMAIL API_KEY THEME_ID',
-         'generate a config file – see https://github.com/posthaven/posthaven_theme/#posthaven'
+    desc 'configure EMAIL API_KEY [THEME_ID]',
+         'Generate a config file – See https://github.com/posthaven/posthaven_theme/#posthaven ' +
+         'for information on how to get your api key. Omit theme id to select from existing ' +
+         'themes on your account or create a new theme.'
     def configure(email=nil, api_key=nil, theme_id=nil)
-      if [email, api_key, theme_id].any? { |v| v.nil? }
-        say('An email, api key and theme id are required!', :red)
+      if [email, api_key].any? { |v| v.nil? }
+        say('An email and api key are required!', :red)
         help(:configure)
       else
         config = {email: email, api_key: api_key, theme_id: theme_id}
+        PosthavenTheme.config = config
+        themes = PosthavenTheme.theme_list
+        config[:theme_id] ||= select_theme(themes)
         create_file('config.yml', config.to_yaml)
       end
+    rescue PosthavenTheme::APIError => e
+      report_error(Time.now, 'Configuration Failed', e)
     end
 
-    desc "upload FILE", "upload all theme assets to site"
+    no_commands do
+    end
+
+    desc 'upload FILE', 'Upload all theme assets to site'
     method_option :quiet, type: :boolean, default: false
     def upload(*paths)
       assets = paths.empty? ? local_assets_list : paths
@@ -72,7 +79,7 @@ module PosthavenTheme
       say("Done.", :green) unless options['quiet']
     end
 
-    desc "replace FILE", "completely replace site theme assets with local theme assets"
+    desc 'replace FILE', 'Completely replace site theme assets with local theme assets'
     method_option :quiet, type: :boolean, default: false
     def replace(*paths)
       say('Are you sure you want to completely replace your site theme assets? ' +
@@ -101,7 +108,7 @@ module PosthavenTheme
       report_error(Time.now, "Replacement failed.", e)
     end
 
-    desc "remove FILE", "remove theme asset"
+    desc 'remove FILE', 'Remove theme asset'
     method_option :quiet, type: :boolean, default: false
     def remove(*paths)
       paths.each do |path|
@@ -110,9 +117,9 @@ module PosthavenTheme
       say("Done.", :green) unless options['quiet']
     end
 
-    desc "watch",
-         "upload and delete individual theme assets as they change, " +
-         "use the --keep_files flag to disable remote file deletion"
+    desc 'watch',
+         'upload and delete individual theme assets as they change, ' +
+         'use the --keep_files flag to disable remote file deletion'
     method_option :quiet, type: :boolean, default: false
     method_option :keep_files, type: :boolean, default: false
     def watch
@@ -133,8 +140,8 @@ module PosthavenTheme
       end
     end
 
-    desc "systeminfo",
-         "print out system information and actively loaded libraries for aiding in submitting bug reports"
+    desc 'systeminfo',
+         'print out system information and actively loaded libraries for aiding in submitting bug reports'
     def systeminfo
       ruby_version = "#{RUBY_VERSION}"
       ruby_version += "-p#{RUBY_PATCHLEVEL}" if RUBY_PATCHLEVEL
@@ -229,6 +236,31 @@ module PosthavenTheme
       end
     rescue PosthavenTheme::APIError => e
       report_error(Time.now, "Could not remove #{path}", e)
+    end
+
+    def select_theme(existing)
+      if yes?('Would you like to use an existing theme? [y/n]')
+        existing.sort_by! { |t| t['name'] }
+        say("Select from your existing themes:")
+        existing.each.with_index do |t, idx|
+          say("  %2d – %s" % [idx + 1, t['name']])
+        end
+        n = ask('Enter the number of the theme above:',
+                limited_to: (1..existing.size).map(&:to_s))
+        existing[n.to_i - 1]['id']
+      else
+        create_theme['id']
+      end
+    end
+
+    def create_theme
+      name = ''
+      begin
+        if (name = ask('What would you like to name your theme?')).size = 0
+          say('Oops, the theme needs a name (you can change it later).', :red)
+        end
+      end  until name.size > 0
+      PosthavenTheme.create_theme(name: name)
     end
 
     def notify_and_sleep(message)

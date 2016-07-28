@@ -159,7 +159,7 @@ module PosthavenTheme
   def self.setup
     # Basics
     basic_auth config[:email], config[:api_key]
-    base_uri (config[:api_endpoint] || DEFAULT_API_ENDPOINT)
+    base_uri (config[:api_endpoint] || ENV['PHTHEME_ENDPOINT'] || DEFAULT_API_ENDPOINT)
 
     # Dev
     debug_output $stdout  if config[:debug] || ENV['PHTHEME_DEBUG']
