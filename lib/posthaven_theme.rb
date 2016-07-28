@@ -81,7 +81,7 @@ module PosthavenTheme
     manage_timer(response)
 
     if response.success?
-      response.parsed_response['data'].collect {|a| a['path'] }
+      response.parsed_response['data'].collect { |a| a['path'] }
     else
       raise APIError.new(response)
     end
@@ -154,5 +154,6 @@ module PosthavenTheme
     base_uri (config[:api_endpoint] || DEFAULT_API_ENDPOINT) + "/themes/#{config[:theme_id]}"
     debug_output $stdout  if config[:debug]
     require 'resolv-replace'  if base_uri.include?(':')
+    default_options.update(verify: false)  if ENV['PHTHEME_IGNORE_SSL_VERIFY']
   end
 end
