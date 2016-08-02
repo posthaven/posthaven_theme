@@ -44,7 +44,7 @@ module PosthavenTheme
     def check
       say('Configuration [OK]', :green)  if PosthavenTheme.asset_list
     rescue PosthavenTheme::APIError => e
-      report_error(Time.now, 'Configuration [FAIL]', e)
+      report_error('Configuration [FAIL]', e)
     end
 
     desc 'configure API_KEY',
@@ -75,7 +75,7 @@ module PosthavenTheme
       end
       say("Done.", :green) unless options['quiet']
     rescue PosthavenTheme::APIError => e
-      report_error(Time.now, "Upload Failed.", e)
+      report_error('Upload Failed.', e)
     end
 
     desc 'replace FILE', 'Completely replace site theme assets with local theme assets'
@@ -104,7 +104,7 @@ module PosthavenTheme
         say("Done.", :green) unless options['quiet']
       end
     rescue PosthavenTheme::APIError => e
-      report_error(Time.now, "Replacement failed.", e)
+      report_error('Replacement failed.', e)
     end
 
     desc 'remove FILE', 'Remove theme asset'
@@ -115,7 +115,7 @@ module PosthavenTheme
       end
       say("Done.", :green) unless options['quiet']
     rescue PosthavenTheme::APIError => e
-      report_error(Time.now, "Could not remove #{path}", e)
+      report_error("Could not remove.", e)
     end
 
     desc 'watch',
@@ -137,7 +137,12 @@ module PosthavenTheme
           raise NotImplementedError, "Unknown event -- #{event} -- #{filename}"
         end
 
-        send(action, filename, options['quiet'])
+        begin
+          send(action, filename, options['quiet'])
+        rescue PosthavenTheme::APIError => e
+          verb = action == :send_asset ? 'save' : 'delete'
+          report_error("Unable to #{verb} asset.", e)
+        end
       end
     end
 
@@ -287,8 +292,8 @@ module PosthavenTheme
       mime.nil? || !mime.text?
     end
 
-    def report_error(time, message, error)
-      say("[#{timestamp(time)}] Error: #{message}", :red)
+    def report_error(message, error)
+      say("[#{timestamp(Time.now)}] Error: #{message}", :red)
       say("Error Details: #{error.message}", :yellow)
     end
 
