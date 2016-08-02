@@ -47,10 +47,10 @@ module PosthavenTheme
       report_error(Time.now, 'Configuration [FAIL]', e)
     end
 
-    desc 'configure API_KEY [THEME_ID]',
-         'Generate a config file – See https://github.com/posthaven/posthaven_theme/#posthaven ' +
-         'for information on how to get your api key. Omit theme id to select from existing ' +
-         'themes on your account or create a new theme.'
+    desc 'configure API_KEY',
+         'Generate a config.yml file – See https://github.com/posthaven/posthaven_theme/#posthaven ' +
+         'for information on how to get your api key. Interactively selects (or creates) a theme' +
+         'on your account to edit.'
     def configure(api_key=nil, theme_id=nil)
       if api_key.nil?
         say('An api key is required!', :red)
@@ -74,6 +74,8 @@ module PosthavenTheme
         send_asset(asset, options['quiet'])
       end
       say("Done.", :green) unless options['quiet']
+    rescue PosthavenTheme::APIError => e
+      report_error(Time.now, "Upload Failed.", e)
     end
 
     desc 'replace FILE', 'Completely replace site theme assets with local theme assets'
@@ -112,6 +114,8 @@ module PosthavenTheme
         delete_asset(path, options['quiet'])
       end
       say("Done.", :green) unless options['quiet']
+    rescue PosthavenTheme::APIError => e
+      report_error(Time.now, "Could not remove #{path}", e)
     end
 
     desc 'watch',
@@ -185,7 +189,6 @@ module PosthavenTheme
 
     def download_asset(path)
       return unless valid?(path)
-      notify_and_sleep("Approaching limit of API permits. Naptime until more permits become available!") if PosthavenTheme.needs_sleep?
       asset = PosthavenTheme.get_asset(path)
       if asset['value']
         # For CRLF line endings
@@ -219,8 +222,6 @@ module PosthavenTheme
       if response.success?
         say("[#{timestamp}] Uploaded: #{asset}", :green) unless quiet
       end
-    rescue PosthavenTheme::APIError => e
-      report_error(Time.now, "Could not upload #{asset}", e)
     end
 
     def delete_asset(path, quiet=false)
@@ -231,8 +232,6 @@ module PosthavenTheme
       if response.success?
         say("[#{timestamp}] Removed: #{path}", :green) unless quiet
       end
-    rescue PosthavenTheme::APIError => e
-      report_error(Time.now, "Could not remove #{path}", e)
     end
 
     def select_theme(existing)
@@ -298,6 +297,9 @@ module PosthavenTheme
       result = yield
       print("\r#{' ' * message.length}\r") unless quiet
       result
+    rescue
+      print("\n") unless quiet
+      raise
     end
 
     def timestamp(time = Time.now)

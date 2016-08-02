@@ -79,7 +79,7 @@ Configuration is done via a `config.yml` file in the base directory of your them
 `config.yml` has the following options:
 
 * `api_key` – Your Posthaven API key
-* `theme_id` – The ID of the theme to edit. If you do not know the ID run the `configure` command above with only a api-key and you'll be guided through selecting an existing theme or creating a new one.
+* `theme_id` – The ID of the theme to edit. The easiest way to populate the theme id is via the `configure` command above.
 
 See the `phtheme configure` command above for one step setup of the `config.yml` file.
 
