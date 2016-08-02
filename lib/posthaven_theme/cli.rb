@@ -47,26 +47,23 @@ module PosthavenTheme
       report_error(Time.now, 'Configuration [FAIL]', e)
     end
 
-    desc 'configure EMAIL API_KEY [THEME_ID]',
+    desc 'configure API_KEY [THEME_ID]',
          'Generate a config file – See https://github.com/posthaven/posthaven_theme/#posthaven ' +
          'for information on how to get your api key. Omit theme id to select from existing ' +
          'themes on your account or create a new theme.'
-    def configure(email=nil, api_key=nil, theme_id=nil)
-      if [email, api_key].any? { |v| v.nil? }
-        say('An email and api key are required!', :red)
+    def configure(api_key=nil, theme_id=nil)
+      if api_key.nil?
+        say('An api key is required!', :red)
         help(:configure)
       else
-        config = {email: email, api_key: api_key, theme_id: theme_id}
+        config = {api_key: api_key, theme_id: theme_id}
         PosthavenTheme.config = config
         themes = PosthavenTheme.theme_list
         config[:theme_id] ||= select_theme(themes)
         create_file('config.yml', config.to_yaml)
       end
-    rescue PosthavenTheme::APIError => e
-      report_error(Time.now, 'Configuration Failed', e)
-    end
-
-    no_commands do
+    rescue PosthavenTheme::APIError
+      say('Configuration Failed – Your API Key is Likely Incorrect', :red)
     end
 
     desc 'upload FILE', 'Upload all theme assets to site'
@@ -239,24 +236,34 @@ module PosthavenTheme
     end
 
     def select_theme(existing)
-      if yes?('Would you like to use an existing theme? [y/n]')
-        existing.sort_by! { |t| t['name'] }
-        say("Select from your existing themes:")
-        existing.each.with_index do |t, idx|
-          say("  %2d – %s" % [idx + 1, t['name']])
-        end
-        n = ask('Enter the number of the theme above:',
-                limited_to: (1..existing.size).map(&:to_s))
-        existing[n.to_i - 1]['id']
-      else
+      opt = ask_with_options('Configure the theme to edit:', [
+        'Create a new theme',
+        'Select an existing theme',
+      ])
+      case opt
+      when 0
         create_theme['id']
+      when 1
+        existing.sort_by! { |t| t['name'] }
+        n = ask_with_options("Select from your existing themes:", existing.map { |t| t['name'] })
+        existing[n]['id']
       end
+    end
+
+    # Options are strings to be numbered. Index of selected option is returned.
+    def ask_with_options(prompt, options)
+      say(prompt)
+      options.each.with_index do |o, idx|
+        say("  %2d: %s" % [idx + 1, o])
+      end
+      n = ask('Select>', limited_to: (1..options.size).map(&:to_s))
+      n.to_i - 1
     end
 
     def create_theme
       name = ''
       begin
-        if (name = ask('What would you like to name your theme?')).size = 0
+        if (name = ask('What would you like to name your theme?')).size == 0
           say('Oops, the theme needs a name (you can change it later).', :red)
         end
       end  until name.size > 0

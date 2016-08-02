@@ -8,11 +8,11 @@ The `posthaven_theme` gem provides command line tools for developing a Posthaven
 
 This gem requires Ruby 2.0 or above. 
 
-## Posthaven
+## Posthaven Account
 
 ### API Key
 
-Get your [Posthaven account API key here](https://posthaven.com/account/api_key).
+Get your [Posthaven account API key here](https://posthaven.com/account/theme_api_key).
 
 ### Theme ID
 
@@ -41,10 +41,10 @@ List available commands
 phtheme help
 ```
 
-Generate a configuration file
+Generate a configuration file. For your API key see [above](#posthaven_account).
 
 ```
-phtheme configure email@example.org user-api-key theme-id
+phtheme configure api-key
 
 ```
 
@@ -60,7 +60,7 @@ Remove a theme file
 phtheme remove assets/layout.liquid
 ```
 
-Completely replace site theme assets with the local assets
+Completely remove all old theme files and replace them with current local versions
 
 ```
 phtheme replace
@@ -78,14 +78,10 @@ Configuration is done via a `config.yml` file in the base directory of your them
 
 `config.yml` has the following options:
 
-* `email` – The email address of your Posthaven account
 * `api_key` – Your Posthaven API key
-* `site` – The full **Posthaven subdomain** your site, e.g. "my-site.posthaven.com". This **cannot** a custom domain.
-* `theme-id` – An optional id for the theme you want to edit, if omitted the default theme for the site will be updated
-
+* `theme_id` – The ID of the theme to edit. If you do not know the ID run the `configure` command above with only a api-key and you'll be guided through selecting an existing theme or creating a new one.
 
 See the `phtheme configure` command above for one step setup of the `config.yml` file.
-
 
 # Thanks 
 
