@@ -1,9 +1,12 @@
+require 'posthaven_theme/version'
 require 'httparty'
 
 module PosthavenTheme
   include HTTParty
   @@current_api_call_count = 0
   @@total_api_calls = 40
+
+  headers "User-Agent" => "posthaven_theme #{PosthavenTheme::VERSION}"
 
   class APIError < StandardError
     attr_accessor :response
@@ -31,7 +34,6 @@ module PosthavenTheme
     end
   end
 
-  NOOPParser = Proc.new {|data, format| {} }
   TIMER_RESET = 10
   PERMIT_LOWER_LIMIT = 3
 
@@ -162,8 +164,9 @@ module PosthavenTheme
     base_uri (config[:api_endpoint] || ENV['PHTHEME_ENDPOINT'] || DEFAULT_API_ENDPOINT)
 
     # Dev
-    debug_output $stdout  if config[:debug] || ENV['PHTHEME_DEBUG']
     require 'resolv-replace'  if base_uri.include?(':')
+
+    debug_output $stdout  if config[:debug] || ENV['PHTHEME_DEBUG']
     default_options.update(verify: false)  if ENV['PHTHEME_IGNORE_SSL_VERIFY']
   end
 end
