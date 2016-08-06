@@ -16,10 +16,18 @@ module PosthavenTheme
     end
 
     def message
-      "#{@response.code} #{response_error_message(response)}"
+      "#{response_message} – #{response_error_message(response)}"
     end
 
     private
+
+    def response_message
+      if @response.response && @response.response.message && @response.response.message.size > 0
+        @response.response.message
+      else
+        @response.code
+      end
+    end
 
     def response_error_message(response)
       errors = @response.parsed_response ? @response.parsed_response["errors"] : @response.body

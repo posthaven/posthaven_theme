@@ -8,15 +8,9 @@ The `posthaven_theme` gem provides command line tools for developing a Posthaven
 
 This gem requires Ruby 2.0 or above. 
 
-## Posthaven Account
+## Posthaven API Key
 
-### API Key
-
-Get your [Posthaven account API key here](https://posthaven.com/account/theme_api_key).
-
-### Theme ID
-
-You'll need to create a new theme or copy an existing theme into your account. Once done you can navigate to the theme editor for your theme and find the theme id in the URL.
+Log in and get your [Posthaven account API key here](https://posthaven.com/account/theme_api_key).
 
 
 # Installation
@@ -35,46 +29,51 @@ gem update posthaven_theme
 
 # Usage
 
-List available commands
+The gem installs the `phtheme` CLI program.
 
+### List available commands
 ```
 phtheme help
 ```
 
-Generate a configuration file. For your API key see [above](#posthaven_account).
+### Generate a configuration file. For your API key see [above](#posthaven_account).
 
 ```
 phtheme configure api-key
 
 ```
-
-Upload a theme file
+### Upload all files
 
 ```
-phtheme upload assets/layout.liquid
+phtheme upload
 ```
 
-Remove a theme file
+### Upload a single theme file
+
+```
+phtheme upload layouts/theme.liquid
+```
+
+### Remove a theme file
 
 ```
 phtheme remove assets/layout.liquid
 ```
 
-Completely remove all old theme files and replace them with current local versions
+### Completely remove all old theme files and replace them with current local versions
 
 ```
 phtheme replace
 ```
 
-Watch the theme directory and upload any files as they change
-
+### Watch the current theme directory and upload any files as they change
 ```
 phtheme watch
 ```
 
 # Configuration
 
-Configuration is done via a `config.yml` file in the base directory of your theme. If you are storing your theme in version control it is **highly recommended that you do not** store this file in version control, e.g. in git add it to your `.gitignore`.
+Running `phtheme configure` generates `config.yml` file in the base directory of your theme. If you are storing your theme in version control it is **highly recommended that you DO NOT** store this file in version control, e.g. in git add it to your `.gitignore`.
 
 `config.yml` has the following options:
 
