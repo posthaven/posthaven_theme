@@ -33,7 +33,8 @@ module PosthavenTheme
     NON_CONFIG_COMMANDS = %w{help configure systeminfo}
 
     def initialize(args = [], local_options = {}, config = {})
-      unless NON_CONFIG_COMMANDS.include?(config[:current_command].name)
+      command = config[:current_command] || config[:current_task]
+      if command && !NON_CONFIG_COMMANDS.include?(command.name)
         setup_config
         validate_config!
       end
