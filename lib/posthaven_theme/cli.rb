@@ -175,7 +175,7 @@ module PosthavenTheme
     private
 
     def watcher
-      FileWatcher.new(Dir.pwd).watch() do |filename, event|
+      Filewatcher.new(Dir.pwd).watch() do |filename, event|
         yield(filename, event)
       end
     end
