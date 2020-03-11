@@ -130,9 +130,9 @@ module PosthavenTheme
         filename = filename.gsub("#{Dir.pwd}/", '')
 
         next unless local_assets_list.include?(filename)
-        action = if [:changed, :new].include?(event)
+        action = if [:updated, :created].include?(event)
           :send_asset
-        elsif event == :delete
+        elsif event == :deleted
           :delete_asset
         else
           raise NotImplementedError, "Unknown event -- #{event} -- #{filename}"
@@ -175,7 +175,7 @@ module PosthavenTheme
     private
 
     def watcher
-      Filewatcher.new(Dir.pwd).watch() do |filename, event|
+      Filewatcher.new(Dir.pwd, every: true).watch() do |filename, event|
         yield(filename, event)
       end
     end
